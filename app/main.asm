@@ -103,7 +103,7 @@ Mainloop    xor.b   #BIT0,&P1OUT            ; Toggle P1.0 every 1s
 ;------------------------------------------------------------------------------
 ;           Delay Subroutine
 ;------------------------------------------------------------------------------
-Delay_1s    mov.w   #333, R14
+Delay_1s    mov.w   #350, R14
 Outer_loop  mov.w   #1000, R15
 Inner_loop  dec.w   R15
             jnz     Inner_loop
