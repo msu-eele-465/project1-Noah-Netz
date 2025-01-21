@@ -79,7 +79,21 @@ RESET       mov.w   #__STACK_END,SP         ; Initialize stack pointer
 StopWDT     mov.w   #WDTPW+WDTHOLD,&WDTCTL  ; Stop WDT
 SetupP1     bic.b   #BIT0,&P1OUT            ; Clear P1.0 output
             bis.b   #BIT0,&P1DIR            ; P1.0 output
-            bic.w   #LOCKLPM5,&PM5CTL0       ; Unlock I/O pins
+            
+SetupP6     bic.b   #BIT6,&P6OUT            ; Clear P6.6 output
+            bis.b   #BIT6,&P6DIR            ; P6.6 output
+            bic.w   #LOCKLPM5,&PM5CTL0      ; Unlock I/O pins
+
+Timer_B0    bis.w   #TBCLR,&TB0CTL          ; Clear timer
+            bis.w   #TBSSEL__SMCLK,&TB0CTL  ; Select SMCLK as timer source
+            bis.w   #MC__UP,&TB0CTL         ; UP counting
+            bis.w   #ID__4,&TB0CTL          ; Div-by-4
+            mov.w   #111,&TB0EX0              ; Divide by 8
+
+            mov.w   #32150,&TB0CCR0
+            bis.w   #CCIE,&TB0CCTL0
+            bic.w   #CCIFG,&TB0CCTL0
+            bis.w   #GIE,SR
 
 Mainloop    xor.b   #BIT0,&P1OUT            ; Toggle P1.0 every 1s
             call    #Delay_1s               ; Call delay subroutine
@@ -89,17 +103,28 @@ Mainloop    xor.b   #BIT0,&P1OUT            ; Toggle P1.0 every 1s
 ;------------------------------------------------------------------------------
 ;           Delay Subroutine
 ;------------------------------------------------------------------------------
-Delay_1s    mov.w   #333, R14
+Delay_1s    mov.w   #350, R14
 Outer_loop  mov.w   #1000, R15
 Inner_loop  dec.w   R15
             jnz     Inner_loop
             dec.w   R14
             jnz     Outer_loop
             ret
+
+;------------------------------------------------------------------------------
+;           ISR
+;------------------------------------------------------------------------------
+ISR_TB0_Overflow:
+            xor.b   #BIT6,&P6OUT
+            bic.w   #CCIFG,&TB0CCTL0
+            reti
             
 ;------------------------------------------------------------------------------
 ;           Interrupt Vectors
 ;------------------------------------------------------------------------------
             .sect   RESET_VECTOR            ; MSP430 RESET Vector
             .short  RESET                   ;
+
+            .sect   ".int43"
+            .short  ISR_TB0_Overflow
             .end
